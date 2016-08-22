@@ -1,5 +1,8 @@
 package com.example.cc15.weathereo;
 
+import android.content.Context;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -11,6 +14,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -37,58 +41,70 @@ public class WeatherListFragment extends Fragment {
     }
 
     private ArrayAdapter<String> mForecastAdapter;
+    private CustomListAdapter WeatherAdapter;
+    public ArrayList<String> dayndate = new ArrayList<String>();
+    public ArrayList<String> weatherType = new ArrayList<String>();
+    public ArrayList<String> maxTemp = new ArrayList<String>();
+    public ArrayList<String> minTemp = new ArrayList<String>();
+    ListView listview;
+
+    @Override
+    public void onStart() {
+
+        super.onStart();
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        FetchWeatherTask weatherTask = new FetchWeatherTask();
-        weatherTask.execute("801103");
+
+
+        try{
+            FetchWeatherTask weatherTask = new FetchWeatherTask();
+            weatherTask.execute("801103");
+        }catch (Exception e){
+            Log.v("TAG","chirag is hot");
+            e.printStackTrace();
+        }
         super.onCreate(savedInstanceState);
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
-        String[] data = {
-                "Mon 6/23 - Sunny - 31/17",
-                "Tue 6/24 - Foggy - 21/8",
-                "Wed 6/25 - Cloudy - 22/17",
-                "Thurs 6/26 - Rainy - 18/11",
-                "Fri 6/27 - Foggy - 21/10",
-                "Sat 6/28 - TRAPPED IN WEATHERSTATION - 23/18",
-                "Sun 6/29 - Sunny - 20/7"
-        };
+
         View view = inflater.inflate(R.layout.main_fragment,container,false);
-        List<String> weekForecast = new ArrayList<String>(Arrays.asList(data));
+        //List<String> weekForecast = new ArrayList<String>(Arrays.asList(data));
 
-        mForecastAdapter =
+        /*mForecastAdapter =
                 new ArrayAdapter<String>(
-                        getActivity(),android.R.layout.simple_list_item_1,android.R.id.text1,weekForecast);
-        ListView listview = (ListView) view.findViewById(R.id.list_main);
+                        getActivity(),android.R.layout.simple_list_item_1,android.R.id.text1,weekForecast);*/
+        listview = (ListView) view.findViewById(R.id.list_main);
 
-        listview.setAdapter(mForecastAdapter);
+
+
         return view;
 
     }
 
-    public class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
+    public class FetchWeatherTask extends AsyncTask<String, Void, Boolean> {
 
         private final String LOG_TAG = FetchWeatherTask.class.getSimpleName();
 
-        private String getReadableDateString(long time){
+        private String getReadableDateString(long time) {
             SimpleDateFormat shortenedDateFormat = new SimpleDateFormat("EEE MMM dd");
             return shortenedDateFormat.format(time);
         }
 
-        /*
-        private String formatHighLows(double high, double low) {
+
+        private String formatTemp(double temp) {
             // For presentation, assume the user doesn't care about tenths of a degree.
-            long roundedHigh = Math.round(high);
-            long roundedLow = Math.round(low);
+            long roundedTemp = Math.round(temp);
 
-            String highLowStr = roundedHigh + "/" + roundedLow;
-            return highLowStr;
-        }*/
+            String tempStr = "" + roundedTemp;
+            return tempStr;
+        }
 
-        private String[] getWeatherDataFromJson(String forecastJsonStr, int numDays)
+        private Boolean getWeatherDataFromJson(String forecastJsonStr, int numDays)
                 throws JSONException {
 
             final String OWM_LIST = "list";
@@ -109,7 +125,7 @@ public class WeatherListFragment extends Fragment {
             dayTime = new Time();
 
             String[] resultStrs = new String[numDays];
-            for(int i = 0; i < weatherArray.length(); i++) {
+            for (int i = 0; i < weatherArray.length(); i++) {
 
                 String day;
                 String description;
@@ -119,7 +135,7 @@ public class WeatherListFragment extends Fragment {
 
                 long dateTime;
 
-                dateTime = dayTime.setJulianDay(julianStartDay+i);
+                dateTime = dayTime.setJulianDay(julianStartDay + i);
                 day = getReadableDateString(dateTime);
 
                 JSONObject weatherObject = dayForecast.getJSONArray(OWM_WEATHER).getJSONObject(0);
@@ -129,18 +145,34 @@ public class WeatherListFragment extends Fragment {
                 double high = temperatureObject.getDouble(OWM_MAX);
                 double low = temperatureObject.getDouble(OWM_MIN);
 
-                highAndLow = high + "/" + low ;
-                resultStrs[i] = day + " - " + description + " - " + highAndLow;
+                //highAndLow = high + "/" + low ;
+                //resultStrs[i] = day + " - " + description + " - " + highAndLow;
+                Log.v("TAG","Add(nothing)done");
+                Log.v("TAG",day+" chirag");
+                //System.out.println(dayndate.get(i) + " ed " + weatherType.get(i) + " nb " + maxTemp.get(i) + " " + minTemp.get(i));
+                dayndate.add(day);
+                //Log.v("TAG", "Add(day)done");
+                weatherType.add(description);
+                //Log.v("TAG", "Add(description)done");
+                maxTemp.add(formatTemp(high));
+                //Log.v("TAG", "Add(high)done");
+                minTemp.add(formatTemp(low));
+                //Log.v("TAG", "Add(low)done");
+                //System.out.println(dayndate.get(i) + " ed " + weatherType.get(i) + " nb " + maxTemp.get(i) + " " + minTemp.get(i));
             }
 
-            for (String s : resultStrs) {
+
+            /*for (String s : resultStrs) {
                 Log.v(LOG_TAG, "Forecast entry: " + s);
-            }
-            return resultStrs;
-
+           */
+            if (dayndate.isEmpty()) {
+                return false;
+            } else
+                return true;
         }
+
         @Override
-        protected String[] doInBackground(String... params) {
+        protected Boolean doInBackground(String... params) {
 
             if (params.length == 0) {
                 return null;
@@ -230,22 +262,28 @@ public class WeatherListFragment extends Fragment {
             try {
                 return getWeatherDataFromJson(forecastJsonStr, numDays);
             } catch (JSONException e) {
+                Log.v("TAG","chirag is sexy");
                 Log.e(LOG_TAG, e.getMessage(), e);
                 e.printStackTrace();
             }
 
             // This will only happen if there was an error getting or parsing the forecast.
-            return null;
+            return false;
         }
 
         @Override
-        protected void onPostExecute(String[] result) {
-            if (result != null) {
-                mForecastAdapter.clear();
-                for(String dayForecastStr : result) {
-                    mForecastAdapter.add(dayForecastStr);
-                }
-                // New data is back from the server.  Hooray!
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected void onPostExecute(Boolean result) {
+            if(result) {
+                WeatherAdapter = new CustomListAdapter(getActivity(), dayndate, weatherType, maxTemp, minTemp);
+                listview.setAdapter(WeatherAdapter);
+            }
+            else{
+                Toast.makeText(getActivity(),"No Internet Connection",Toast.LENGTH_SHORT).show();
             }
         }
     }
