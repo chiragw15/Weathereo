@@ -47,6 +47,7 @@ public class WeatherListFragment extends Fragment {
     public ArrayList<String> maxTemp = new ArrayList<String>();
     public ArrayList<String> minTemp = new ArrayList<String>();
     ListView listview;
+    DBHelper mydb;
 
     @Override
     public void onStart() {
@@ -84,6 +85,12 @@ public class WeatherListFragment extends Fragment {
 
         return view;
 
+    }
+    public boolean printdata(){
+        Log.v("TAG","this function is getting executed");
+        WeatherAdapter = new CustomListAdapter(getActivity(), dayndate, weatherType, maxTemp, minTemp);
+        listview.setAdapter(WeatherAdapter);
+        return true;
     }
 
     public class FetchWeatherTask extends AsyncTask<String, Void, Boolean> {
@@ -150,6 +157,7 @@ public class WeatherListFragment extends Fragment {
                 Log.v("TAG","Add(nothing)done");
                 Log.v("TAG",day+" chirag");
                 //System.out.println(dayndate.get(i) + " ed " + weatherType.get(i) + " nb " + maxTemp.get(i) + " " + minTemp.get(i));
+
                 dayndate.add(day);
                 //Log.v("TAG", "Add(day)done");
                 weatherType.add(description);
@@ -278,13 +286,34 @@ public class WeatherListFragment extends Fragment {
 
         @Override
         protected void onPostExecute(Boolean result) {
-            if(result) {
-                WeatherAdapter = new CustomListAdapter(getActivity(), dayndate, weatherType, maxTemp, minTemp);
-                listview.setAdapter(WeatherAdapter);
+            Log.v("TAG", "this function is getting called");
+            mydb = new DBHelper(getActivity());
+            if (result == null) {
+                dayndate = mydb.getData("dayndate");
+                weatherType = mydb.getData("type");
+                maxTemp = mydb.getData("maxtemp");
+                minTemp = mydb.getData("mintemp");
+                printdata();
+                Toast.makeText(getActivity(), "Data not updated. Please check the internet connection", Toast.LENGTH_SHORT).show();
+            } else {
+                if(result){
+                Log.v("TAG", "this function is getting executed");
+                    mydb.refresh();
+                boolean ans = mydb.insertData(dayndate, weatherType, maxTemp, minTemp);
+                Log.v("TAG", "this function is getting executed with value " + ans);
+                if (ans) {
+                    Log.v("TAG", "ans is true");
+                    dayndate = mydb.getData("dayndate");
+                    weatherType = mydb.getData("type");
+                    maxTemp = mydb.getData("maxtemp");
+                    minTemp = mydb.getData("mintemp");
+                    printdata();
+                } else Log.v("TAG", "ans is false");
             }
             else{
-                Toast.makeText(getActivity(),"No Internet Connection",Toast.LENGTH_SHORT).show();
+                Toast.makeText(getActivity(), "No Internet Connection", Toast.LENGTH_SHORT).show();
             }
+        }
         }
     }
 
